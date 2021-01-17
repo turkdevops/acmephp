@@ -13,6 +13,7 @@ namespace Tests\AcmePhp\Core\Challenge\Http;
 
 use AcmePhp\Core\Challenge\Http\HttpDataExtractor;
 use AcmePhp\Core\Challenge\Http\HttpValidator;
+use AcmePhp\Core\Challenge\SolverInterface;
 use AcmePhp\Core\Protocol\AuthorizationChallenge;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -35,10 +36,10 @@ class HttpValidatorTest extends TestCase
         $validator = new HttpValidator($mockExtractor->reveal(), $mockHttpClient->reveal());
 
         $stubChallenge->getType()->willReturn($typeDns);
-        $this->assertFalse($validator->supports($stubChallenge->reveal()));
+        $this->assertFalse($validator->supports($stubChallenge->reveal(), $this->prophesize(SolverInterface::class)->reveal()));
 
         $stubChallenge->getType()->willReturn($typeHttp);
-        $this->assertTrue($validator->supports($stubChallenge->reveal()));
+        $this->assertTrue($validator->supports($stubChallenge->reveal(), $this->prophesize(SolverInterface::class)->reveal()));
     }
 
     public function testIsValid()
@@ -57,11 +58,11 @@ class HttpValidatorTest extends TestCase
         $mockExtractor->getCheckUrl($stubChallenge->reveal())->willReturn($checkUrl);
         $mockExtractor->getCheckContent($stubChallenge->reveal())->willReturn($checkContent);
 
-        $mockHttpClient->get($checkUrl)->willReturn($stubResponse->reveal());
+        $mockHttpClient->get($checkUrl, ['verify' => false])->willReturn($stubResponse->reveal());
         $stubResponse->getBody()->willReturn($stubStream->reveal());
         $stubStream->getContents()->willReturn($checkContent);
 
-        $this->assertTrue($validator->isValid($stubChallenge->reveal()));
+        $this->assertTrue($validator->isValid($stubChallenge->reveal(), $this->prophesize(SolverInterface::class)->reveal()));
     }
 
     public function testIsValidCatchExceptions()
@@ -78,12 +79,12 @@ class HttpValidatorTest extends TestCase
         $mockExtractor->getCheckUrl($stubChallenge->reveal())->willReturn($checkUrl);
         $mockExtractor->getCheckContent($stubChallenge->reveal())->willReturn($checkContent);
 
-        $mockHttpClient->get($checkUrl)->willThrow(new ClientException(
+        $mockHttpClient->get($checkUrl, ['verify' => false])->willThrow(new ClientException(
             'boom',
             $this->prophesize(RequestInterface::class)->reveal(),
             $this->prophesize(ResponseInterface::class)->reveal()
         ));
 
-        $this->assertFalse($validator->isValid($stubChallenge->reveal()));
+        $this->assertFalse($validator->isValid($stubChallenge->reveal(), $this->prophesize(SolverInterface::class)->reveal()));
     }
 }

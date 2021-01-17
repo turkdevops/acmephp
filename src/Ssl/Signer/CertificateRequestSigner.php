@@ -24,10 +24,8 @@ class CertificateRequestSigner
 {
     /**
      * Generate a CSR from the given distinguishedName and keyPair.
-     *
-     * @return string
      */
-    public function signCertificateRequest(CertificateRequest $certificateRequest)
+    public function signCertificateRequest(CertificateRequest $certificateRequest): string
     {
         $csrObject = $this->createCsrWithSANsObject($certificateRequest);
 
@@ -40,8 +38,6 @@ class CertificateRequestSigner
 
     /**
      * Generate a CSR object with SANs from the given distinguishedName and keyPair.
-     *
-     * @return mixed
      */
     protected function createCsrWithSANsObject(CertificateRequest $certificateRequest)
     {
@@ -86,7 +82,10 @@ EOL;
                 ]
             );
 
-            openssl_free_key($resource);
+            // PHP 8 automatically frees the key instance and deprecates the function
+            if (\PHP_VERSION_ID < 80000) {
+                openssl_free_key($resource);
+            }
 
             if (!$csr) {
                 throw new CSRSigningException(sprintf('OpenSSL CSR signing failed with error: %s', openssl_error_string()));
@@ -100,10 +99,8 @@ EOL;
 
     /**
      * Retrieves a CSR payload from the given distinguished name.
-     *
-     * @return array
      */
-    private function getCSRPayload(DistinguishedName $distinguishedName)
+    private function getCSRPayload(DistinguishedName $distinguishedName): array
     {
         $payload = [];
         if (null !== $countryName = $distinguishedName->getCountryName()) {
